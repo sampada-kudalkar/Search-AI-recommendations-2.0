@@ -89,7 +89,7 @@ function PinIcon() {
 // ── Info banner (used at top of right panel and bottom of Why it works tab) ───
 function InfoBanner({ text, cta, onCta }: { text: string; cta: string; onCta?: () => void }) {
   return (
-    <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-[#f5f0ff] border-b border-[#e4d9f9]">
+    <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-[#f5f0ff] mx-6">
       <div className="flex items-center gap-2 min-w-0">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="flex-shrink-0">
           <path
@@ -106,6 +106,46 @@ function InfoBanner({ text, cta, onCta }: { text: string; cta: string; onCta?: (
         {cta}
       </button>
     </div>
+  )
+}
+
+// ── Platform favicon helpers ──────────────────────────────────────────────────
+const PLATFORM_DOMAIN_MAP: Record<string, string> = {
+  'gemini':     'gemini.google.com',
+  'chatGPT':    'chatgpt.com',
+  'perplexity': 'perplexity.ai',
+}
+
+function getFaviconUrl(platform: string): string {
+  const domain = PLATFORM_DOMAIN_MAP[platform]
+    ?? (platform.includes('.') ? platform : null)
+  return domain
+    ? `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
+    : ''
+}
+
+const PLATFORM_BADGE_COLORS: Record<string, string> = {
+  'SWOT':             'bg-[#e8f4fd] text-[#1976d2]',
+  'Multiple sources': 'bg-[#f3f4f6] text-[#555]',
+}
+
+function PlatformIcon({ platform }: { platform: string }) {
+  const faviconUrl = getFaviconUrl(platform)
+  if (faviconUrl) {
+    return (
+      <img
+        src={faviconUrl}
+        alt={platform}
+        className="w-4 h-4 rounded-sm flex-shrink-0"
+        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+      />
+    )
+  }
+  const colorClass = PLATFORM_BADGE_COLORS[platform] ?? 'bg-[#f3f4f6] text-[#555]'
+  return (
+    <span className={`w-4 h-4 rounded-sm flex items-center justify-center text-[10px] font-medium flex-shrink-0 ${colorClass}`}>
+      {platform.charAt(0).toUpperCase()}
+    </span>
   )
 }
 
@@ -135,8 +175,6 @@ export default function TaskDetailPage() {
 
   // ── Derived values ───────────────────────────────────────────────────────
   const themeConfig    = nsaThemesConfig[rec.themeId]
-  const currentScore   = metrics.searchAiScore
-  const potentialScore = Math.min(100, currentScore + 8)
   const locationCount  = rec.locations ?? 1
   const locations      = getLocationsForRec(rec.id, locationCount)
   const firstLocation  = locations[0] ?? 'Dubbo, NSW 2830'
@@ -313,41 +351,18 @@ export default function TaskDetailPage() {
 
         {/* ── ACCORDION: Current score ─────────────────────────── */}
         <Accordion title="Current score" open={openAccordion === 'score'} onToggle={() => toggleAccordion('score')}>
-          <div className="flex flex-col gap-3 pt-1">
-            <div className="flex items-end gap-6">
-              <div className="flex flex-col">
-                <span className="text-[28px] text-[#212121] leading-[36px] tracking-[-0.56px] font-normal">
-                  {currentScore}
-                </span>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <div className="w-2 h-2 rounded-full bg-[#1976d2]" />
-                  <span className="text-[12px] text-[#555]">Current score</span>
-                </div>
+          <div className="flex flex-col -mb-3">
+            {[
+              { label: 'Search AI score', value: `${metrics.searchAiScore}%` },
+              { label: 'Citation score',  value: `${metrics.citationShare}%` },
+              { label: 'Visibility score', value: `${metrics.visibility}%` },
+              { label: 'Brand ranking',    value: `${metrics.rank}` },
+            ].map(({ label, value }) => (
+              <div key={label} className="flex items-center justify-between py-3 last:mb-3">
+                <span className="text-[13px] text-[#212121] leading-[20px] font-normal">{label}</span>
+                <span className="text-[13px] text-[#212121] leading-[20px] font-normal">{value}</span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-[28px] text-[#212121] leading-[36px] tracking-[-0.56px] font-normal">
-                  {potentialScore}
-                </span>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <div className="w-2 h-2 rounded-full bg-[#377e2c]" />
-                  <span className="text-[12px] text-[#555]">Potential</span>
-                </div>
-              </div>
-            </div>
-            {/* Dual progress bar */}
-            <div className="relative h-6 w-full">
-              <div className="absolute left-0 right-0 top-[9px] h-[4px] rounded-full bg-[#eaeaea]" />
-              <div className="absolute left-0 right-0 top-[9px] h-[4px] rounded-full bg-[#7ed321]" />
-              <div
-                className="absolute left-0 top-[9px] h-[4px] rounded-full bg-[#09f]"
-                style={{ width: `${currentScore}%` }}
-              />
-              <div
-                className="absolute top-[3px] w-4 h-4 rounded-full bg-[#1976d2] border-2 border-white"
-                style={{ left: `calc(${currentScore}% - 8px)` }}
-              />
-              <div className="absolute top-[3px] right-0 w-4 h-4 rounded-full bg-[#377e2c] border-2 border-white" />
-            </div>
+            ))}
           </div>
         </Accordion>
 
@@ -380,7 +395,7 @@ export default function TaskDetailPage() {
         />
 
         {/* Tab bar */}
-        <div className="flex border-b border-[#eaeaea] px-5 flex-shrink-0 bg-white">
+        <div className="flex border-b border-[#eaeaea] mx-6 flex-shrink-0 bg-white">
           {(['Why it works', 'References', 'Intelligence'] as const).map((tab, i) => (
             <button
               key={tab}
@@ -414,7 +429,7 @@ export default function TaskDetailPage() {
 
               {/* Section A: Why it works */}
               <div className="p-5 border border-[#eaeaea] rounded-lg">
-                <p className="text-[14px] font-medium text-[#212121] leading-[22px] tracking-[-0.28px] mb-3">
+                <p className="text-[14px] font-normal text-[#212121] leading-[22px] tracking-[-0.28px] mb-3">
                   Why it works
                 </p>
                 <ul className="flex flex-col gap-2.5">
@@ -520,46 +535,60 @@ export default function TaskDetailPage() {
 
           {/* ── TAB 1: References ───────────────────────────────── */}
           {activeTab === 1 && (
-            <div className="px-6 py-5">
+            <div className="px-6 py-5 flex flex-col gap-1">
               {rec.sources.length === 0 ? (
                 <p className="text-[14px] text-[#888] leading-[22px]">
                   No references available for this recommendation.
                 </p>
               ) : (
-                <div className="flex flex-col gap-3">
-                  <p className="text-[13px] text-[#888] leading-[20px] mb-1">
-                    {rec.sources.length} source{rec.sources.length !== 1 ? 's' : ''} referenced in generating this recommendation
-                  </p>
+                <div className="border border-[#eaeaea] rounded-lg overflow-hidden">
                   {rec.sources.map((s, i) => (
                     <div
                       key={i}
-                      className="flex items-start gap-3 border border-[#eaeaea] rounded-lg p-4 hover:border-[#c0c0c0] transition-colors"
+                      className="px-5 py-4 border-b border-[#eaeaea] last:border-b-0"
                     >
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] leading-[16px] bg-[#eaeaea] text-[#555] whitespace-nowrap flex-shrink-0 mt-0.5 capitalize font-normal">
-                        {s.platform}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[14px] text-[#212121] leading-[22px] tracking-[-0.28px] mb-0.5">
-                          {s.competitorName}
-                        </p>
-                        <p className="text-[13px] text-[#555] leading-[20px]">{s.snippet}</p>
+                      {/* Row 1: platform icon + name | referenced count */}
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <PlatformIcon platform={s.platform} />
+                          <span className="text-[13px] text-[#555] leading-[20px] font-normal">
+                            {s.platform}
+                          </span>
+                        </div>
+                        {s.referencedInAnswers > 0 && (
+                          <div className="flex items-center gap-1">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+                              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                            </svg>
+                            <span className="text-[12px] text-[#888] leading-[18px]">
+                              Referenced in {s.referencedInAnswers} answers
+                            </span>
+                          </div>
+                        )}
                       </div>
-                      {s.url && s.url !== '#' && (
+
+                      {/* Row 2: blue link title */}
+                      {s.url && s.url !== '#' ? (
                         <a
                           href={s.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded hover:bg-[#f5f5f5] transition-colors"
-                          title="Open reference"
+                          className="block text-[13px] text-[#1976d2] leading-[20px] hover:underline mb-1"
                           onClick={e => e.stopPropagation()}
                         >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                            <polyline points="15 3 21 3 21 9" />
-                            <line x1="10" y1="14" x2="21" y2="3" />
-                          </svg>
+                          {s.competitorName}
                         </a>
+                      ) : (
+                        <p className="text-[13px] text-[#1976d2] leading-[20px] mb-1">
+                          {s.competitorName}
+                        </p>
                       )}
+
+                      {/* Row 3: snippet */}
+                      <p className="text-[13px] text-[#555] leading-[20px]">
+                        {s.snippet}
+                      </p>
                     </div>
                   ))}
                 </div>
