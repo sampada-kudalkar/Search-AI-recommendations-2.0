@@ -63,28 +63,6 @@ function PinIcon() {
   )
 }
 
-// ── Info banner (used at top of right panel and bottom of Why it works tab) ───
-function InfoBanner({ text, cta, onCta }: { text: string; cta: string; onCta?: () => void }) {
-  return (
-    <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-[#f5f0ff] mx-6">
-      <div className="flex items-center gap-2 min-w-0">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="flex-shrink-0">
-          <path
-            d="M12 3 L13.8 8.5 L20 8.5 L14.9 12 L16.7 17.5 L12 14 L7.3 17.5 L9.1 12 L4 8.5 L10.2 8.5 Z"
-            fill="#7c3aed" opacity="0.75"
-          />
-        </svg>
-        <span className="text-[13px] text-[#555] leading-[20px] truncate">{text}</span>
-      </div>
-      <button
-        onClick={onCta}
-        className="text-[13px] text-[#1976d2] whitespace-nowrap hover:underline flex-shrink-0 font-medium"
-      >
-        {cta}
-      </button>
-    </div>
-  )
-}
 
 // ── Platform favicon helpers ──────────────────────────────────────────────────
 const PLATFORM_DOMAIN_MAP: Record<string, string> = {
