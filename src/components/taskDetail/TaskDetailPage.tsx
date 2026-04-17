@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAppStore } from '../../store/useAppStore'
@@ -130,147 +130,9 @@ const LLM_PLATFORM_COLORS: Record<string, { bg: string; text: string }> = {
   Claude:     { bg: '#C77B3A', text: '#fff' },
 }
 
-// ── Ring chart + competitor list layout ───────────────────────────────────────
+// ── Competitor list layout ────────────────────────────────────────────────────
 const RING_COLORS = ['#6366f1', '#3b82f6', '#ec4899', '#f59e0b', '#14b8a6']
 const YOU_COLOR   = '#0f7195'
-
-function MultiRingChart({
-  competitors,
-  youCitations,
-}: {
-  competitors: { name: string; totalCitations: number; citationRank: number }[]
-  youCitations: number
-}) {
-  const arcsRef = useRef<SVGGElement>(null)
-
-  // Sort ascending so innermost = lowest citations, outermost = highest
-  const allEntries = [
-    ...competitors.map(c => ({
-      name: c.name,
-      citations: c.totalCitations,
-      color: RING_COLORS[(c.citationRank - 1) % RING_COLORS.length],
-      isYou: false,
-    })),
-    { name: 'You', citations: youCitations, color: YOU_COLOR, isYou: true },
-  ].sort((a, b) => a.citations - b.citations)
-
-  const maxCitations = Math.max(...allEntries.map(e => e.citations), 1)
-  const strokeWidth  = 10
-  const ringGap      = 6
-  const baseRadius   = 28
-  const totalRings   = allEntries.length
-  const outerRadius  = baseRadius + (totalRings - 1) * (strokeWidth + ringGap)
-  const ringAreaSize = (outerRadius + strokeWidth) * 2 + 4
-  const leftPad      = 108   // room for name labels to the left of rings
-  const rightPad     = 32    // room for count labels to the right of arc endpoints
-  const svgWidth     = leftPad + ringAreaSize + rightPad
-  const svgHeight    = ringAreaSize
-  const cx           = leftPad + ringAreaSize / 2   // horizontal ring centre
-  const cy           = ringAreaSize / 2             // vertical ring centre
-
-  useEffect(() => {
-    const el = arcsRef.current
-    if (!el) return
-    const circles = el.querySelectorAll<SVGCircleElement>('circle[data-target]')
-    circles.forEach(c => {
-      const target = parseFloat(c.dataset.target ?? '0')
-      c.style.strokeDashoffset = c.dataset.full ?? '0'
-      requestAnimationFrame(() => {
-        c.style.transition = 'stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1)'
-        c.style.strokeDashoffset = String(target)
-      })
-    })
-  }, [])
-
-  return (
-    <div className="flex flex-col items-center flex-shrink-0">
-      <svg
-        width={svgWidth}
-        height={svgHeight}
-        viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-        overflow="visible"
-      >
-        {/* Rotated arcs — rotation lives here, not on the outer SVG */}
-        <g ref={arcsRef} transform={`rotate(-90, ${cx}, ${cy})`}>
-          {allEntries.map((entry, i) => {
-            const radius     = baseRadius + i * (strokeWidth + ringGap)
-            const circ       = 2 * Math.PI * radius
-            const fill       = (entry.citations / maxCitations) * circ
-            const dashOffset = circ - fill
-            return (
-              <g key={entry.name}>
-                <circle
-                  cx={cx} cy={cy} r={radius}
-                  fill="none" stroke="#eaeaea" strokeWidth={strokeWidth}
-                />
-                <circle
-                  cx={cx} cy={cy} r={radius}
-                  fill="none" stroke={entry.color} strokeWidth={strokeWidth}
-                  strokeLinecap="round"
-                  strokeDasharray={circ}
-                  strokeDashoffset={circ}
-                  data-target={dashOffset}
-                  data-full={circ}
-                />
-              </g>
-            )
-          })}
-        </g>
-
-        {/* Name labels — unrotated, positioned at 9-o'clock of each ring */}
-        {allEntries.map((entry, i) => {
-          const radius = baseRadius + i * (strokeWidth + ringGap)
-          const lx = cx - radius - strokeWidth / 2 - 5
-          return (
-            <text
-              key={`lbl-${entry.name}`}
-              x={lx}
-              y={cy}
-              textAnchor="end"
-              dominantBaseline="middle"
-              fontSize="10"
-              fontFamily="Roboto, sans-serif"
-              fill={entry.isYou ? YOU_COLOR : '#555555'}
-              fontWeight={entry.isYou ? '600' : '400'}
-            >
-              {entry.isYou ? 'You' : entry.name}
-            </text>
-          )
-        })}
-
-        {/* Count labels — at the arc endpoint (unrotated calculation) */}
-        {allEntries.map((entry, i) => {
-          const fillFraction = entry.citations / maxCitations
-          if (fillFraction < 0.05) return null   // skip near-zero arcs
-          const radius   = baseRadius + i * (strokeWidth + ringGap)
-          // Arc starts at 12-o'clock (-π/2) and sweeps clockwise by fillFraction * 2π
-          const endAngle = fillFraction * 2 * Math.PI - Math.PI / 2
-          const ex = cx + radius * Math.cos(endAngle)
-          const ey = cy + radius * Math.sin(endAngle)
-          const label = entry.citations >= 1000
-            ? `${(entry.citations / 1000).toFixed(1)}k`
-            : String(entry.citations)
-          return (
-            <text
-              key={`cnt-${entry.name}`}
-              x={ex + 7}
-              y={ey}
-              textAnchor="start"
-              dominantBaseline="middle"
-              fontSize="10"
-              fontFamily="Roboto, sans-serif"
-              fill={entry.isYou ? YOU_COLOR : '#888888'}
-              fontWeight={entry.isYou ? '600' : '400'}
-            >
-              {label}
-            </text>
-          )
-        })}
-      </svg>
-      <p className="text-[11px] text-[#888] leading-[16px] mt-1">Citation share</p>
-    </div>
-  )
-}
 
 function CompetitorIntelligenceLayout({
   competitors,
@@ -290,12 +152,8 @@ function CompetitorIntelligenceLayout({
   const sorted = [...competitors].sort((a, b) => a.citationRank - b.citationRank)
 
   return (
-    <div className="flex gap-6 items-start">
-      {/* Left: Ring chart */}
-      <MultiRingChart competitors={sorted} youCitations={youCitations} />
-
-      {/* Right: competitor list — internal scroll so ring stays anchored */}
-      <div className="flex-1 min-w-0 flex flex-col max-h-[360px] overflow-y-auto pr-1">
+    <div className="flex flex-col">
+      <div className="flex flex-col">
         {sorted.map((comp, i) => {
           const color = RING_COLORS[i % RING_COLORS.length]
           const isExpanded = expandedCompetitor === i
@@ -512,7 +370,7 @@ function StepRichBox({ step }: { step: ChecklistStep }) {
           {step.keywords.map((kw, i) => (
             <span
               key={i}
-              className="inline-flex items-center gap-1.5 bg-[#f5f0ff] text-[#6834b7] border border-[#e4d9f9] rounded px-2 py-1 text-[12px] leading-[18px] cursor-pointer hover:bg-[#ede5ff] transition-colors"
+              className="inline-flex items-center gap-1.5 bg-white text-[#212121] border border-[#eaeaea] rounded px-2 py-1 text-[12px] leading-[18px] cursor-pointer hover:bg-[#f5f5f5] transition-colors"
               onClick={() => copyToClipboard(kw, `kw-${i}`)}
               title="Click to copy"
             >
@@ -522,7 +380,7 @@ function StepRichBox({ step }: { step: ChecklistStep }) {
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
               ) : (
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#6834b7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-50">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#555555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-50">
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                 </svg>
