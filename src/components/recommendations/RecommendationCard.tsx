@@ -158,11 +158,13 @@ function ListCard({ rec }: { rec: Recommendation }) {
   const rejectRec = useAppStore(s => s.rejectRec)
   const locationCount = rec.locations ?? 1
   const [showLocations, setShowLocations] = useState(false)
+  const [showAssign, setShowAssign] = useState(false)
 
   return (
+    <>
     <div
       onClick={() => navigate(`/recommendations/${rec.id}`)}
-      className="border-b border-[#eaeaea] px-8 py-5 cursor-pointer hover:bg-[#fafafa] transition-colors"
+      className="group border-b border-[#eaeaea] px-8 py-5 cursor-pointer hover:bg-[#fafafa] transition-colors"
     >
       {/* Row 1: chips (left) + locations (right) */}
       <div className="flex items-center justify-between gap-4 mb-3">
@@ -203,7 +205,7 @@ function ListCard({ rec }: { rec: Recommendation }) {
       </div>
 
       {/* Row 2: title */}
-      <p className="text-[14px] text-[#212121] leading-[22px] tracking-[-0.28px] font-normal mb-1">
+      <p className="text-[14px] text-[#212121] group-hover:text-[#1976d2] leading-[22px] tracking-[-0.28px] font-normal mb-1 transition-colors">
         {rec.title}
       </p>
 
@@ -215,7 +217,7 @@ function ListCard({ rec }: { rec: Recommendation }) {
       {/* Row 4: score nudge */}
       <div className="flex items-center gap-2 bg-[#f9f7fd] px-2 pt-2 pb-2 rounded mt-5 mb-5">
         <TrendUpIcon />
-        <span className="text-[13px] text-[#555] leading-[18px] tracking-[-0.26px]">
+        <span className="text-[13px] text-[#555] leading-[18px] tracking-[-0.26px] font-normal">
           {buildImpactMessage(rec)}
         </span>
       </div>
@@ -223,24 +225,10 @@ function ListCard({ rec }: { rec: Recommendation }) {
       {/* Row 5: CTAs */}
       <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
         <button
-          onClick={() => navigate(`/recommendations/${rec.id}`)}
-          style={{
-            height: 36,
-            padding: '8px 12px',
-            border: '1px solid #e5e9f0',
-            borderRadius: 4,
-            background: 'white',
-            fontSize: 14,
-            lineHeight: '20px',
-            letterSpacing: '-0.28px',
-            color: '#212121',
-            cursor: 'pointer',
-            fontFamily: 'Roboto, sans-serif',
-            fontWeight: 400,
-          }}
-          className="hover:bg-[#f5f5f5] transition-colors whitespace-nowrap"
+          onClick={() => setShowAssign(true)}
+          className="h-9 px-3 text-[14px] leading-[20px] tracking-[-0.28px] rounded bg-[#1976d2] text-white hover:bg-[#1565c0] transition-colors whitespace-nowrap cursor-pointer"
         >
-          View details
+          Accept
         </button>
         <button
           onClick={() => rejectRec(rec.id)}
@@ -264,6 +252,8 @@ function ListCard({ rec }: { rec: Recommendation }) {
         </button>
       </div>
     </div>
+    {showAssign && <AssignModal recId={rec.id} onClose={() => setShowAssign(false)} />}
+    </>
   )
 }
 
