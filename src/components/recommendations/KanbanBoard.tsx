@@ -4,6 +4,7 @@ import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
 import { useAppStore } from '../../store/useAppStore'
 import KanbanColumn from './KanbanColumn'
 import type { RecStatus } from '../../types'
+import { getLocationsForRec } from '../../data/locationsData'
 
 const COLUMNS: { status: RecStatus; label: string; color: string }[] = [
   { status: 'pending', label: 'Pending', color: 'text-text-secondary' },
@@ -13,8 +14,22 @@ const COLUMNS: { status: RecStatus; label: string; color: string }[] = [
 ]
 
 export default function KanbanBoard() {
-  const { recommendations, moveRec, reorderRecs } = useAppStore()
+  const {
+    recommendations, moveRec, reorderRecs,
+    filterTypes, filterImpact, filterThemes, filterLocations,
+  } = useAppStore()
   const [activeId, setActiveId] = useState<string | null>(null)
+
+  const panelFiltered = recommendations.filter(r => {
+    if (filterTypes.length > 0 && !filterTypes.includes(r.category)) return false
+    if (filterImpact.length > 0 && !filterImpact.includes(r.effort)) return false
+    if (filterThemes.length > 0 && !filterThemes.includes(r.themeId)) return false
+    if (filterLocations.length > 0) {
+      const recLocs = getLocationsForRec(r.id, r.locations ?? 0)
+      if (!recLocs.some(l => filterLocations.includes(l))) return false
+    }
+    return true
+  })
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -68,7 +83,7 @@ export default function KanbanBoard() {
       >
         <div className="flex gap-4 h-full min-w-max">
           {COLUMNS.map(col => {
-            const items = recommendations.filter(r => r.status === col.status)
+            const items = panelFiltered.filter(r => r.status === col.status)
             return (
               <KanbanColumn
                 key={col.status}

@@ -6,6 +6,7 @@ import Header from './components/shell/Header'
 import DashboardPage from './pages/DashboardPage'
 import RecommendationsPage from './pages/RecommendationsPage'
 import TaskDetailPage from './components/taskDetail/TaskDetailPage'
+import FilterPanel from './components/recommendations/FilterPanel'
 import Toast from './components/common/Toast'
 import { useAppStore } from './store/useAppStore'
 
@@ -27,6 +28,7 @@ function IconBtn({ children, title }: { children: React.ReactNode; title: string
 
 // ── Recommendations page header right: Search + More + Filter ────────────────
 function RecsHeaderRight() {
+  const { toggleFilterPanel, showFilterPanel } = useAppStore()
   return (
     <div className="flex items-center gap-2">
       {/* Search */}
@@ -39,10 +41,23 @@ function RecsHeaderRight() {
       <IconBtn title="More options">
         <img src={`${BASE}assets/more_vert.svg`} alt="More" className="w-5 h-5" />
       </IconBtn>
-      {/* Filter */}
-      <IconBtn title="Filter">
+      {/* Filter — active state when panel is open */}
+      <button
+        title="Filter"
+        onClick={toggleFilterPanel}
+        style={{
+          width: 36, height: 36,
+          border: `1px solid ${showFilterPanel ? '#1976d2' : '#e5e9f0'}`,
+          borderRadius: 4,
+          background: showFilterPanel ? '#ecf5fd' : 'white',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', flexShrink: 0,
+          transition: 'border-color 0.15s, background 0.15s',
+        }}
+        className="hover:bg-[#f5f5f5]"
+      >
         <img src={`${BASE}assets/filter_list.svg`} alt="Filter" className="w-5 h-5" />
-      </IconBtn>
+      </button>
     </div>
   )
 }
@@ -55,6 +70,7 @@ function AppShell({
   headerRight,
   onBack,
   showL2 = true,
+  rightPanel,
 }: {
   children: React.ReactNode
   title: string
@@ -62,11 +78,13 @@ function AppShell({
   headerRight?: React.ReactNode
   onBack?: () => void
   showL2?: boolean
+  rightPanel?: React.ReactNode
 }) {
   return (
     <div className="flex h-screen overflow-hidden bg-white font-roboto">
       <L1 />
       {showL2 && <L2 />}
+      {/* L3 main column — shrinks when rightPanel is present */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <Header
           title={title}
@@ -78,6 +96,8 @@ function AppShell({
           {children}
         </main>
       </div>
+      {/* Right panel sits outside L3 so the entire column (header + content) shrinks */}
+      {rightPanel}
     </div>
   )
 }
@@ -190,7 +210,6 @@ function TaskDetailShell() {
       title="Recommendation details"
       onBack={() => navigate('/recommendations')}
       headerRight={headerRight}
-      showL2={false}
     >
       {isAccepting ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-6 bg-white">
@@ -239,7 +258,7 @@ export default function App() {
         <Route
           path="/recommendations"
           element={
-            <AppShell title="Recommendations" showInfoIcon headerRight={<RecsHeaderRight />}>
+            <AppShell title="Recommendations" showInfoIcon headerRight={<RecsHeaderRight />} rightPanel={<FilterPanel />}>
               <RecommendationsPage />
             </AppShell>
           }

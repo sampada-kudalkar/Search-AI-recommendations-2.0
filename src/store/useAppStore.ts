@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Recommendation, BusinessMetrics, ViewMode, RecStatus, AssignChoice } from '../types'
+import type { Recommendation, BusinessMetrics, ViewMode, RecStatus, AssignChoice, RecCategory } from '../types'
 import { seedRecommendations, seedMetrics, seedBusiness } from '../data/seedData'
 
 interface Toast {
@@ -22,6 +22,13 @@ interface AppStore {
   regeneratingIds: Set<string>
   activeDetailTab: Record<string, number>
 
+  // Filter panel state
+  showFilterPanel: boolean
+  filterTypes: RecCategory[]
+  filterImpact: string[]
+  filterThemes: string[]
+  filterLocations: string[]
+
   // Actions
   acceptRec: (id: string, assignChoice: AssignChoice, assignedTo?: string) => void
   rejectRec: (id: string) => void
@@ -37,6 +44,14 @@ interface AppStore {
   addToast: (message: string, type?: 'success' | 'info' | 'error') => void
   removeToast: (id: string) => void
   setDetailTab: (recId: string, tabIndex: number) => void
+
+  // Filter panel actions
+  toggleFilterPanel: () => void
+  setFilterTypes: (types: RecCategory[]) => void
+  setFilterImpact: (impact: string[]) => void
+  setFilterThemes: (themes: string[]) => void
+  setFilterLocations: (locations: string[]) => void
+  clearAllFilters: () => void
 }
 
 export const useAppStore = create<AppStore>((set, get) => ({
@@ -49,6 +64,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
   toasts: [],
   regeneratingIds: new Set(),
   activeDetailTab: {},
+  showFilterPanel: false,
+  filterTypes: [],
+  filterImpact: [],
+  filterThemes: [],
+  filterLocations: [],
 
   acceptRec: (id, assignChoice, assignedTo) => {
     set(state => ({
@@ -177,4 +197,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
   setDetailTab: (recId, tabIndex) => {
     set(state => ({ activeDetailTab: { ...state.activeDetailTab, [recId]: tabIndex } }))
   },
+
+  toggleFilterPanel: () => set(state => ({ showFilterPanel: !state.showFilterPanel })),
+  setFilterTypes: (types) => set({ filterTypes: types }),
+  setFilterImpact: (impact) => set({ filterImpact: impact }),
+  setFilterThemes: (themes) => set({ filterThemes: themes }),
+  setFilterLocations: (locations) => set({ filterLocations: locations }),
+  clearAllFilters: () => set({ filterTypes: [], filterImpact: [], filterThemes: [], filterLocations: [] }),
 }))
